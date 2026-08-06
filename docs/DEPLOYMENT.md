@@ -32,6 +32,8 @@ Worker start command:
 scripts/render-worker.sh
 ```
 
+Because the web and worker services use `runtime: docker`, Render starts the web service from the Dockerfile `CMD` and starts the worker with the Blueprint `dockerCommand` field. `startCommand` is intentionally not used for Docker services.
+
 ## Required Environment Variables
 
 Set these in Render:
