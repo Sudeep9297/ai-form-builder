@@ -1,5 +1,16 @@
-FROM composer:2 AS vendor
+FROM composer:2 AS composer
+
+FROM php:8.2-cli AS vendor
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    libonig-dev \
+    libpng-dev \
+    libzip-dev \
+    unzip \
+    && docker-php-ext-install gd mbstring pdo_mysql zip \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=composer /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --optimize-autoloader
 COPY . .
@@ -15,10 +26,15 @@ RUN npm run build
 
 FROM php:8.2-apache
 WORKDIR /var/www/html
-RUN apt-get update && apt-get install -y libzip-dev libpng-dev libxml2-dev unzip \
-    && docker-php-ext-install pdo_mysql zip gd \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libonig-dev \
+    libpng-dev \
+    libzip-dev \
+    unzip \
+    && docker-php-ext-install gd mbstring pdo_mysql zip \
     && a2enmod rewrite \
-    && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
+    && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=vendor /app /var/www/html
 COPY --from=assets /app/public/build /var/www/html/public/build
 RUN chmod +x scripts/render-web.sh scripts/render-worker.sh \
