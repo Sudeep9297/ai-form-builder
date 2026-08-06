@@ -42,4 +42,5 @@ COPY --from=vendor /app /var/www/html
 COPY --from=assets /app/public/build /var/www/html/public/build
 RUN chmod +x scripts/render-web.sh scripts/render-worker.sh \
     && chown -R www-data:www-data storage bootstrap/cache
+EXPOSE 8080
 CMD ["scripts/render-web.sh"]
