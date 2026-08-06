@@ -21,8 +21,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (str_starts_with((string) config('app.url'), 'https://')) {
-            URL::forceScheme('https');
+        $appUrl = rtrim((string) config('app.url'), '/');
+
+        if ($appUrl !== '') {
+            URL::useOrigin($appUrl);
+            URL::useAssetOrigin($appUrl);
+
+            Vite::createAssetPathsUsing(fn (string $path) => $appUrl.'/'.ltrim($path, '/'));
+
+            if (str_starts_with($appUrl, 'https://')) {
+                URL::forceScheme('https');
+            }
         }
 
         Vite::prefetch(concurrency: 3);
