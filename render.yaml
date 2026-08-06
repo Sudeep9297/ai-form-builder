@@ -1,28 +1,8 @@
 services:
-  - type: pserv
-    name: ai-form-builder-mysql
-    runtime: image
-    image:
-      url: mysql/mysql-server:8.0
-    plan: starter
-    disk:
-      name: mysql-data
-      mountPath: /var/lib/mysql
-      sizeGB: 10
-    envVars:
-      - key: MYSQL_ROOT_PASSWORD
-        sync: false
-      - key: MYSQL_DATABASE
-        value: form_builder
-      - key: MYSQL_USER
-        value: form_builder
-      - key: MYSQL_PASSWORD
-        sync: false
-
   - type: web
     name: ai-form-builder-web
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_NAME
@@ -38,69 +18,19 @@ services:
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
-        fromService:
-          type: pserv
-          name: ai-form-builder-mysql
-          property: host
+        sync: false
       - key: DB_PORT
-        value: 3306
+        value: "3306"
       - key: DB_DATABASE
-        value: form_builder
+        sync: false
       - key: DB_USERNAME
-        value: form_builder
+        sync: false
       - key: DB_PASSWORD
         sync: false
       - key: QUEUE_CONNECTION
         value: database
-      - key: CACHE_STORE
-        value: database
-      - key: SESSION_DRIVER
-        value: database
-      - key: FILESYSTEM_DISK
-        value: public
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4o-mini
-    disk:
-      name: ai-form-builder-storage
-      mountPath: /var/www/html/storage/app/public
-      sizeGB: 1
-
-  - type: worker
-    name: ai-form-builder-worker
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./Dockerfile
-    dockerCommand: scripts/render-worker.sh
-    envVars:
-      - key: APP_NAME
-        value: AI Form Builder
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: false
-      - key: APP_KEY
-        sync: false
-      - key: APP_URL
-        sync: false
-      - key: DB_CONNECTION
-        value: mysql
-      - key: DB_HOST
-        fromService:
-          type: pserv
-          name: ai-form-builder-mysql
-          property: host
-      - key: DB_PORT
-        value: 3306
-      - key: DB_DATABASE
-        value: form_builder
-      - key: DB_USERNAME
-        value: form_builder
-      - key: DB_PASSWORD
-        sync: false
-      - key: QUEUE_CONNECTION
-        value: database
+      - key: RUN_QUEUE_WORKER
+        value: "true"
       - key: CACHE_STORE
         value: database
       - key: SESSION_DRIVER

@@ -24,4 +24,8 @@ php artisan storage:link || true
 php artisan config:cache
 php artisan route:cache
 
+if [ "${RUN_QUEUE_WORKER:-false}" = "true" ]; then
+    php artisan queue:work --queue=ai,imports,webhooks,default --sleep=3 --tries=3 --timeout=120 &
+fi
+
 exec apache2-foreground
