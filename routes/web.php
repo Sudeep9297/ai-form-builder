@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicFormController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -29,5 +30,25 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+if (config('app.debug')) {
+    Route::get('/debug-request', function (Request $request) {
+        return response()->json([
+            'host' => $request->getHost(),
+            'http_host' => $request->server('HTTP_HOST'),
+            'server_name' => $request->server('SERVER_NAME'),
+            'scheme' => $request->getScheme(),
+            'full_url' => $request->fullUrl(),
+            'url' => url('/'),
+            'app_url' => config('app.url'),
+            'forwarded' => [
+                'host' => $request->headers->get('x-forwarded-host'),
+                'proto' => $request->headers->get('x-forwarded-proto'),
+                'port' => $request->headers->get('x-forwarded-port'),
+                'prefix' => $request->headers->get('x-forwarded-prefix'),
+            ],
+        ]);
+    });
+}
 
 require __DIR__.'/auth.php';
