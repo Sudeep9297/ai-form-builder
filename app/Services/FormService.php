@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Form;
 use App\Models\FormVersion;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ class FormService
 
     public function create(User $user, array $data): Form
     {
+        $user = $this->ensureTenant($user);
         $schema = $this->schemas->validate($data['schema'] ?? $this->schemas->defaultSchema($data['title'] ?? 'Untitled form'));
 
         $form = Form::create([
@@ -99,5 +101,20 @@ class FormService
     private function compiledCacheKey(Form $form): string
     {
         return 'forms:'.$form->id.':rules:v'.$form->version;
+    }
+
+    private function ensureTenant(User $user): User
+    {
+        if ($user->tenant_id) {
+            return $user;
+        }
+
+        $tenant = Tenant::create([
+            'name' => $user->name."'s Workspace",
+            'slug' => Str::slug($user->name).'-'.Str::random(6),
+        ]);
+        $user->forceFill(['tenant_id' => $tenant->id])->save();
+
+        return $user->refresh();
     }
 }
