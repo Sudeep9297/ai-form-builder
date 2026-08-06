@@ -32,4 +32,11 @@ if [ "${RUN_QUEUE_WORKER:-false}" = "true" ]; then
     php artisan queue:work --queue=ai,imports,webhooks,default --sleep=3 --tries=3 --timeout=120 &
 fi
 
+if [ -d /etc/apache2/mods-enabled ]; then
+    rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
+    a2enmod mpm_prefork rewrite >/dev/null
+    echo "Apache MPM modules enabled:"
+    ls /etc/apache2/mods-enabled/mpm_*.load 2>/dev/null || true
+fi
+
 exec apache2-foreground

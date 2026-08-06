@@ -63,6 +63,8 @@ php artisan route:cache
 
 The script skips `storage:link` when `public/storage` already exists, so repeated Railway deploys remain idempotent.
 
+Before starting Apache, the script removes `mpm_event` and `mpm_worker` module links and enables `mpm_prefork`, which is the single MPM expected by the `php:8.2-apache` mod_php image.
+
 No SQL schema dump is committed for Railway because Laravel's migrator automatically tries to load `database/schema/mysql-schema.sql` on a fresh MySQL database, and that path depends on the external `mysql` CLI. Database schema creation is handled by Laravel migrations instead.
 
 ## Post Deploy
