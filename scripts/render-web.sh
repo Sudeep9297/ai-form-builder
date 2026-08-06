@@ -20,7 +20,11 @@ new PDO("mysql:host={$host};port={$port};dbname={$db}", $user, $pass, [PDO::ATTR
 done
 
 php artisan migrate --force --seed
-php artisan storage:link || true
+if [ -e public/storage ] || [ -L public/storage ]; then
+    echo "Storage link already exists."
+else
+    php artisan storage:link
+fi
 php artisan config:cache
 php artisan route:cache
 

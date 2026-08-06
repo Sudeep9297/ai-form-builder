@@ -56,10 +56,12 @@ The startup script does not require the `mysql` CLI. It waits for MySQL with PHP
 
 ```bash
 php artisan migrate --force --seed
-php artisan storage:link || true
+php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 ```
+
+The script skips `storage:link` when `public/storage` already exists, so repeated Railway deploys remain idempotent.
 
 No SQL schema dump is committed for Railway because Laravel's migrator automatically tries to load `database/schema/mysql-schema.sql` on a fresh MySQL database, and that path depends on the external `mysql` CLI. Database schema creation is handled by Laravel migrations instead.
 
