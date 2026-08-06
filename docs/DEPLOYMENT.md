@@ -48,6 +48,21 @@ Set these in Render:
 
 Render notes: Render Blueprints define non-Postgres services under `services`. Render's Blueprint spec allows `plan: free` for web services, but not for private services or background workers, and omitted plans default to `starter`. This free Blueprint therefore defines only the web service and expects MySQL credentials from an external database provider.
 
+## Railway
+
+`railway.json` pins Railway to the root Dockerfile and starts the app with `scripts/render-web.sh`.
+
+The startup script does not require the `mysql` CLI. It waits for MySQL with PHP PDO, then runs:
+
+```bash
+php artisan migrate --force --seed
+php artisan storage:link || true
+php artisan config:cache
+php artisan route:cache
+```
+
+If a Railway dashboard start command was previously set to import `database/schema/mysql-schema.sql`, remove it or leave it overridden by `railway.json`. Database schema creation is handled by Laravel migrations.
+
 ## Post Deploy
 
 1. Open `/login`.
