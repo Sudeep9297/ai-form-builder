@@ -34,6 +34,11 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'aiGenerationId' => fn () => $request->session()->get('aiGenerationId'),
+                'importBatchId' => fn () => $request->session()->get('importBatchId'),
+            ],
         ];
     }
 }

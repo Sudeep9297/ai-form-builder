@@ -1,5 +1,6 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
+import { FileText, LayoutDashboard, Plus } from 'lucide-react';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
@@ -25,10 +26,16 @@ export default function AuthenticatedLayout({ header, children }) {
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
+                                    href={route('forms.index')}
+                                    active={route().current('forms.*') || route().current('dashboard')}
                                 >
-                                    Dashboard
+                                    <span className="inline-flex items-center gap-2"><LayoutDashboard className="h-4 w-4" /> Forms</span>
+                                </NavLink>
+                                <NavLink
+                                    href={route('forms.create')}
+                                    active={route().current('forms.create')}
+                                >
+                                    <span className="inline-flex items-center gap-2"><Plus className="h-4 w-4" /> New</span>
                                 </NavLink>
                             </div>
                         </div>
@@ -129,10 +136,10 @@ export default function AuthenticatedLayout({ header, children }) {
                 >
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
+                            href={route('forms.index')}
+                            active={route().current('forms.*') || route().current('dashboard')}
                         >
-                            Dashboard
+                            <span className="inline-flex items-center gap-2"><FileText className="h-4 w-4" /> Forms</span>
                         </ResponsiveNavLink>
                     </div>
 
