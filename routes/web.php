@@ -2,16 +2,13 @@
 
 use App\Http\Controllers\AiGenerationController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicFormController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Welcome', [
-    'canLogin' => Route::has('login'),
-    'canRegister' => Route::has('register'),
-]))->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::get('/f/{token}', [PublicFormController::class, 'show'])->name('public.forms.show');
 Route::post('/f/{token}', [PublicFormController::class, 'submit'])->middleware('throttle:20,1')->name('public.forms.submit');

@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Copy, Download, Eye, FileUp, GripVertical, Plus, RotateCcw, Save, Sparkles, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const fieldTypes = ['text', 'textarea', 'number', 'email', 'phone', 'date', 'dropdown', 'radio', 'checkbox', 'file', 'section', 'rating', 'url'];
 
@@ -32,7 +32,8 @@ export default function Builder({ auth, form, schema, versions = [], submissions
     const [selected, setSelected] = useState(null);
     const [raw, setRaw] = useState(JSON.stringify(schema, null, 2));
     const [rawError, setRawError] = useState('');
-    const [aiPrompt, setAiPrompt] = useState('');
+    const [aiJob, setAiJob] = useState(null);
+    const [importJob, setImportJob] = useState(null);
     const [importPreview, setImportPreview] = useState(null);
     const submit = useForm({});
     const ai = useForm({ prompt: '', mode: form ? 'edit' : 'create', form_id: form?.id });
@@ -43,6 +44,66 @@ export default function Builder({ auth, form, schema, versions = [], submissions
         const total = submissions.total ?? submissions.data?.length ?? 0;
         return { total, fields: fields.filter((f) => f.type !== 'section').length, completion: total ? '100%' : '0%' };
     }, [fields, submissions]);
+
+    useEffect(() => {
+        if (flash.aiGenerationId) {
+            setAiJob({ id: flash.aiGenerationId, status: 'queued' });
+        }
+    }, [flash.aiGenerationId]);
+
+    useEffect(() => {
+        if (flash.importBatchId) {
+            setImportJob({ id: flash.importBatchId, status: 'queued' });
+        }
+    }, [flash.importBatchId]);
+
+    useEffect(() => {
+        if (!aiJob?.id || ['completed', 'failed'].includes(aiJob.status)) {
+            return;
+        }
+
+        const timer = window.setInterval(async () => {
+            const response = await fetch(route('ai-generations.show', aiJob.id), { headers: { Accept: 'application/json' } });
+            if (!response.ok) {
+                return;
+            }
+            const payload = await response.json();
+            setAiJob(payload);
+            if (payload.status === 'completed' && payload.result_schema) {
+                sync(payload.result_schema);
+                window.clearInterval(timer);
+            }
+            if (payload.status === 'failed') {
+                window.clearInterval(timer);
+            }
+        }, 1800);
+
+        return () => window.clearInterval(timer);
+    }, [aiJob?.id, aiJob?.status]);
+
+    useEffect(() => {
+        if (!importJob?.id || ['ready_for_mapping', 'failed'].includes(importJob.status)) {
+            return;
+        }
+
+        const timer = window.setInterval(async () => {
+            const response = await fetch(route('imports.show', importJob.id), { headers: { Accept: 'application/json' } });
+            if (!response.ok) {
+                return;
+            }
+            const payload = await response.json();
+            setImportJob(payload);
+            if (payload.status === 'ready_for_mapping' && payload.detected_schema) {
+                setImportPreview(payload.detected_schema);
+                window.clearInterval(timer);
+            }
+            if (payload.status === 'failed') {
+                window.clearInterval(timer);
+            }
+        }, 1800);
+
+        return () => window.clearInterval(timer);
+    }, [importJob?.id, importJob?.status]);
 
     const sync = (next) => {
         setDraft(next);
@@ -105,6 +166,17 @@ export default function Builder({ auth, form, schema, versions = [], submissions
         form ? router.put(route('forms.update', form.id), payload) : router.post(route('forms.store'), payload);
     };
 
+    const updateImportField = (id, patch) => {
+        const next = structuredClone(importPreview);
+        next.steps.forEach((step) => step.fields = step.fields.map((field) => field.id === id ? { ...field, ...patch } : field));
+        setImportPreview(next);
+    };
+
+    const applyImportPreview = () => {
+        sync(importPreview);
+        setImportPreview(null);
+    };
+
     const selectedField = fields.find((field) => field.id === selected);
 
     return (
@@ -128,13 +200,15 @@ export default function Builder({ auth, form, schema, versions = [], submissions
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">AI</h3>
                             <textarea value={ai.data.prompt} onChange={(e) => ai.setData('prompt', e.target.value)} className="mt-3 h-24 w-full rounded-md border-gray-300 text-sm" placeholder="Add an emergency contact section" />
                             <button onClick={() => ai.post(route('ai-generations.store'))} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white"><Sparkles className="h-4 w-4" /> Generate</button>
-                            {flash.aiGenerationId && <p className="mt-2 text-xs text-gray-600">AI job queued: #{flash.aiGenerationId}. Open `/ai-generations/{flash.aiGenerationId}` for status.</p>}
+                            {aiJob && <p className="mt-2 text-xs text-gray-600">AI job #{aiJob.id}: {aiJob.status}. Completed results apply to the canvas automatically.</p>}
+                            {aiJob?.status === 'failed' && <p className="mt-2 text-xs text-red-700">{aiJob.error}</p>}
                         </section>
                         <section className="rounded-md border bg-white p-4">
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Import</h3>
                             <input type="file" accept=".docx,.xlsx" onChange={(e) => importer.setData('source', e.target.files[0])} className="mt-3 text-sm" />
                             <button onClick={() => importer.post(route('imports.store'))} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm"><FileUp className="h-4 w-4" /> Upload</button>
-                            {flash.importBatchId && <p className="mt-2 text-xs text-gray-600">Import queued: #{flash.importBatchId}. Review JSON status before committing.</p>}
+                            {importJob && <p className="mt-2 text-xs text-gray-600">Import #{importJob.id}: {importJob.status}. Review detected fields before applying.</p>}
+                            {importJob?.warnings?.length > 0 && <p className="mt-2 text-xs text-amber-700">{importJob.warnings.join(' ')}</p>}
                         </section>
                     </aside>
 
@@ -186,6 +260,29 @@ export default function Builder({ auth, form, schema, versions = [], submissions
                             <textarea value={raw} onChange={(e) => setRaw(e.target.value)} className="h-80 w-full rounded-md border-gray-300 font-mono text-xs" />
                             {rawError && <p className="mt-2 text-sm text-red-700">{rawError}</p>}
                         </section>
+
+                        {importPreview && (
+                            <section className="rounded-md border bg-white p-4">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="font-semibold">Import mapping preview</h3>
+                                        <p className="text-sm text-gray-600">Adjust detected field types before applying the schema to the builder.</p>
+                                    </div>
+                                    <button onClick={applyImportPreview} className="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white">Apply import</button>
+                                </div>
+                                <div className="space-y-2">
+                                    {importPreview.steps.flatMap((step) => step.fields).map((field) => (
+                                        <div key={field.id} className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_160px_1fr]">
+                                            <input value={field.label} onChange={(event) => updateImportField(field.id, { label: event.target.value, key: keyFrom(event.target.value) })} className="rounded-md border-gray-300 text-sm" />
+                                            <select value={field.type} onChange={(event) => updateImportField(field.id, { type: event.target.value })} className="rounded-md border-gray-300 text-sm">
+                                                {fieldTypes.map((type) => <option key={type}>{type}</option>)}
+                                            </select>
+                                            <input value={(field.options || []).map((option) => option.label).join(', ')} onChange={(event) => updateImportField(field.id, { options: event.target.value.split(',').map((label) => label.trim()).filter(Boolean).map((label) => ({ label, value: keyFrom(label) })) })} className="rounded-md border-gray-300 text-sm" placeholder="Options" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
                     </main>
 
                     <aside className="space-y-4">

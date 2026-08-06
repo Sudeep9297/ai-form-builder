@@ -14,7 +14,7 @@ The application uses Laravel as the backend and Inertia React as the frontend de
 ## Async Flow
 
 - AI generation creates an `ai_generations` row and dispatches `GenerateFormWithAi`.
-- Imports create an `import_batches` row and dispatch `ProcessImportBatch`.
+- Imports create an `import_batches` row and dispatch `ProcessImportBatch`; the builder polls status and shows a mapping preview before applying the detected schema.
 - Submissions dispatch `FormSubmitted`; `QueueSubmissionWebhooks` fans out webhook jobs.
 
 ## Schema Contract

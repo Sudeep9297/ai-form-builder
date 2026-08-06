@@ -34,8 +34,8 @@
 
 ## Trade-Offs
 
-- The import mapping screen is represented by detected schema/status JSON and editable raw/canvas schema, not a polished field-by-field wizard.
-- AI job status is visible through flash IDs and JSON endpoints, but the editor does not auto-poll completed jobs yet.
+- The import mapping screen focuses on the high-impact corrections: label, type and options. It does not yet expose confidence scores.
+- AI/import status uses straightforward interval polling instead of websockets or SSE.
 - Render live deployment and GitHub push require external credentials.
 
 ## Next Two Weeks

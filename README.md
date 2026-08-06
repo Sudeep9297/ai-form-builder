@@ -97,6 +97,6 @@ Render blueprint is in `render.yaml`; deployment instructions are in `docs/DEPLO
 
 ## Known Limitations
 
-- The UI exposes AI/import job IDs and JSON status endpoints, but does not yet auto-poll and apply completed schemas back into the editor.
-- The DOCX/XLSX import screen returns a mapping-ready schema; a richer visual mapping wizard would be the next iteration.
+- AI/import polling is intentionally simple interval polling; a real-time websocket progress channel would be a good next iteration.
+- The DOCX/XLSX import mapping screen supports label/type/options correction; confidence scoring and unparseable-block annotations could be richer.
 - Live Render deployment and GitHub push require account credentials/PAT.
