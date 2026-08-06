@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\LlmProviderNotConfiguredException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Throwable;
 
 class AiFormService
 {
@@ -18,14 +18,11 @@ class AiFormService
         $model = config('services.openai.model', 'gpt-4o-mini');
         $raw = null;
 
-        if (config('services.openai.key')) {
-            try {
-                $raw = $this->callOpenAi($prompt, $existingSchema, $model);
-            } catch (Throwable) {
-                $raw = null;
-            }
+        if (! $this->hasConfiguredProvider()) {
+            throw LlmProviderNotConfiguredException::forGeneration();
         }
 
+        $raw = $this->callOpenAi($prompt, $existingSchema, $model);
         $schema = $raw ? $this->decodeJson($raw) : null;
         if (! is_array($schema)) {
             $schema = $this->heuristicSchema($prompt, $existingSchema);
@@ -38,6 +35,11 @@ class AiFormService
             'completion_tokens' => strlen(json_encode($schema)) / 4,
             'latency_ms' => (int) ((microtime(true) - $started) * 1000),
         ];
+    }
+
+    public function hasConfiguredProvider(): bool
+    {
+        return filled(config('services.openai.key'));
     }
 
     private function callOpenAi(string $prompt, ?array $existingSchema, string $model): string

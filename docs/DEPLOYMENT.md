@@ -44,7 +44,7 @@ Set these in Render:
 - `QUEUE_CONNECTION=database`.
 - `CACHE_STORE=database` or Redis if provisioned.
 - `FILESYSTEM_DISK=public`.
-- `OPENAI_API_KEY`: optional but recommended.
+- `OPENAI_API_KEY`: optional. Leave it blank when no LLM provider is available; the app still boots and AI requests return a clear provider-not-configured message.
 
 Render notes: Render Blueprints define non-Postgres services under `services`. Render's Blueprint spec allows `plan: free` for web services, but not for private services or background workers, and omitted plans default to `starter`. This free Blueprint therefore defines only the web service and expects MySQL credentials from an external database provider.
 

@@ -17,7 +17,7 @@ AI Form Builder is a Laravel 11, MySQL-ready, React/Vite and TailwindCSS applica
 - Raw JSON schema editor with two-way canvas sync and server-side schema validation before persistence.
 - Public fill URLs at `/f/{token}` with server-side validation compiled from the saved schema.
 - Submission storage, paginated/searchable listing and CSV export.
-- Queued AI form generation and AI editing jobs with visible status rows, model/tokens/latency/error logging and deterministic fallback generation.
+- Queued AI form generation and AI editing jobs with visible status rows, model/tokens/latency/error logging and graceful handling when no LLM provider is configured.
 - DOCX/XLSX import jobs with deterministic parsing, warnings and a mapping-ready detected schema.
 - Part D improvements: multi-tenant isolation, form versioning/rollback, Redis/database cached compiled validation rules, submission webhooks/API, analytics counters and spam honeypot/rate limiting.
 
@@ -44,7 +44,7 @@ Important variables:
 - `DB_*`: MySQL connection.
 - `QUEUE_CONNECTION`: `database` by default; `redis` is supported when Redis is provisioned.
 - `CACHE_STORE`: `database` locally; `redis` recommended on Render.
-- `OPENAI_API_KEY`: optional. Without it, the deterministic fallback AI provider still returns schema-valid forms.
+- `OPENAI_API_KEY`: optional. Without it, the application boots normally and AI generation requests return a clear “No LLM provider is configured” status instead of crashing.
 - `OPENAI_MODEL`: defaults to `gpt-4o-mini`.
 
 ## Architecture
@@ -53,7 +53,7 @@ The backend is split into controllers, form requests, services, jobs and events:
 
 - `FormSchemaService`: schema normalization, validation and Laravel rule compilation.
 - `FormService`: create/update/rollback, version snapshots and compiled-rule caching.
-- `AiFormService`: prompt contract, OpenAI call, JSON repair/extraction and fallback generation.
+- `AiFormService`: prompt contract, optional OpenAI-compatible call, JSON repair/extraction and provider-configuration checks.
 - `ImportParserService`: deterministic DOCX/XLSX parsing into mapping-ready schema.
 - Jobs: `GenerateFormWithAi`, `ProcessImportBatch`, `DispatchSubmissionWebhook`.
 - Event: `FormSubmitted`, consumed by `QueueSubmissionWebhooks`.
@@ -79,9 +79,9 @@ System prompt: act as a form schema compiler and return only valid JSON matching
 
 Output contract: only supported field types are accepted; hallucinated types are normalized to `text`. Labels, keys, placeholders, options, required flags and validation rules must be included.
 
-Malformed JSON handling: the service strips markdown fences, extracts the outer JSON object, decodes it, normalizes it and validates it. If the provider fails or returns broken schema, the deterministic fallback builds a schema from prompt keywords and still passes validation.
+Malformed JSON handling: the service strips markdown fences, extracts the outer JSON object, decodes it, normalizes it and validates it. If no LLM provider key is configured, AI generation is marked failed with a clear configuration message while the rest of the application remains available.
 
-Existing-form editing: edit jobs pass the current schema plus the instruction. The fallback appends or adjusts sections such as emergency contact and Hindi label translation without overwriting the full form.
+Existing-form editing: edit jobs pass the current schema plus the instruction, then normalize and validate the returned schema before it can be applied.
 
 ## API
 

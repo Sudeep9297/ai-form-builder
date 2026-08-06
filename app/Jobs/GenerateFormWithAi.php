@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\LlmProviderNotConfiguredException;
 use App\Models\AiGeneration;
 use App\Services\AiFormService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,6 +35,12 @@ class GenerateFormWithAi implements ShouldQueue
                 'completion_tokens' => (int) $result['completion_tokens'],
                 'latency_ms' => (int) $result['latency_ms'],
                 'result_schema' => $result['schema'],
+                'finished_at' => now(),
+            ]);
+        } catch (LlmProviderNotConfiguredException $exception) {
+            $this->generation->update([
+                'status' => 'failed',
+                'error' => $exception->getMessage(),
                 'finished_at' => now(),
             ]);
         } catch (Throwable $exception) {
