@@ -72,7 +72,7 @@ services:
     runtime: docker
     plan: starter
     dockerfilePath: ./Dockerfile
-    startCommand: php artisan queue:work --queue=ai,imports,webhooks,default --sleep=3 --tries=3 --timeout=120
+    startCommand: scripts/render-worker.sh
     envVars:
       - key: APP_NAME
         value: AI Form Builder

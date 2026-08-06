@@ -21,5 +21,6 @@ RUN apt-get update && apt-get install -y libzip-dev libpng-dev libxml2-dev unzip
     && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
 COPY --from=vendor /app /var/www/html
 COPY --from=assets /app/public/build /var/www/html/public/build
-RUN chown -R www-data:www-data storage bootstrap/cache
-CMD sh -c "php artisan migrate --force --seed && php artisan storage:link || true; apache2-foreground"
+RUN chmod +x scripts/render-web.sh scripts/render-worker.sh \
+    && chown -R www-data:www-data storage bootstrap/cache
+CMD ["scripts/render-web.sh"]
