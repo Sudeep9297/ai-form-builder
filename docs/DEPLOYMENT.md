@@ -61,7 +61,7 @@ php artisan config:cache
 php artisan route:cache
 ```
 
-If a Railway dashboard start command was previously set to import `database/schema/mysql-schema.sql`, remove it or leave it overridden by `railway.json`. Database schema creation is handled by Laravel migrations.
+No SQL schema dump is committed for Railway because Laravel's migrator automatically tries to load `database/schema/mysql-schema.sql` on a fresh MySQL database, and that path depends on the external `mysql` CLI. Database schema creation is handled by Laravel migrations instead.
 
 ## Post Deploy
 
